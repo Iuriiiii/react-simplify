@@ -35,7 +35,7 @@ function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, elem
     };
 }
 
-export function useGlobal<S>(name: string, value: S, reducers?: IModifiers<S>): [S, TSetter<S>] {
+export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] {
     // if(typeof name !== 'string')
     //     return console.error('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
@@ -43,7 +43,7 @@ export function useGlobal<S>(name: string, value: S, reducers?: IModifiers<S>): 
     let actual = store[name];
 
     if (!actual)
-        actual = store[name] = { value, reducers, setters: [], statesSetters: [] };
+        actual = store[name] = { value, setters: [], statesSetters: [] };
 
     const [, setState] = useState(actual ? actual.value : value);
 
