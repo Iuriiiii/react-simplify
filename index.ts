@@ -6,9 +6,9 @@ export interface IModifiers<T> {
     [member: string]: (state: T, ...args: any) => T | void
 }
 
-export type TModifierData = { reducer: string, arguments: any[] }
+// export type TModifierData = { reducer: string, arguments: any[] }
 
-export type TStoreElement<T> = {
+type TStoreElement<T> = {
     value: any,
     reducers?: IModifiers<T>,
     setters: Array<TSetter<T>>,
@@ -19,8 +19,8 @@ interface IStore {
     [member: string]: TStoreElement<any>
 }
 
-let uid = 0;
-let store: IStore = {};
+
+const store: IStore = {}; var uid = 0;
 
 function useComponentId(): number {
     return useState(uid++)[0];
@@ -35,9 +35,9 @@ function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, elem
     };
 }
 
-export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] {
-    // if(typeof name !== 'string')
-    //     return console.error('Invalid data type for 1st argument of useGlobal, "string" expected.');
+export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] | void {
+    if(typeof name !== 'string')
+        return console.error('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
     const id = useComponentId();
     let actual = store[name];
@@ -55,17 +55,17 @@ export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] {
     return [actual.value, actual.setters[id]];
 }
 
-export function useModifier(modifierName: string, ...args: any): TModifierData {
-    // if (typeof modifierName !== 'string')
-    //     return console.error('Invalid data type argument for useModifier, "string" expected.');
+// export function useModifier(modifierName: string, ...args: any): TModifierData {
+//     // if (typeof modifierName !== 'string')
+//     //     return console.error('Invalid data type argument for useModifier, "string" expected.');
 
-    return { reducer: modifierName, arguments: [...args] };
-}
+//     return { reducer: modifierName, arguments: [...args] };
+// }
 
-interface ISuperStateContent<T> {
-    value: T,
-    reducers?: IModifiers<T>
-}
+// interface ISuperStateContent<T> {
+//     value: T,
+//     reducers?: IModifiers<T>
+// }
 
 interface ISuperStateType<T> {
     [member: string]: any
@@ -83,6 +83,12 @@ export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() =
     const [state, setState] = useState(initialValue);
 
     return [state, (value: object): () => void => {
-        return () => setState({...state, ...value});
+        return () => setState({ ...state, ...value });
     }];
+}
+
+const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+export function useDarkMode(): boolean {
+    return isDarkMode;
 }

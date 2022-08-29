@@ -14,13 +14,13 @@ function createSetter(fn, id, element) {
         return () => fn(element.value = value);
     };
 }
-function useGlobal(name, value, reducers) {
+function useGlobal(name, value) {
     // if(typeof name !== 'string')
     //     return console.error('Invalid data type for 1st argument of useGlobal, "string" expected.');
     const id = useComponentId();
     let actual = store[name];
     if (!actual)
-        actual = store[name] = { value, reducers, setters: [], statesSetters: [] };
+        actual = store[name] = { value, setters: [], statesSetters: [] };
     const [, setState] = (0, react_1.useState)(actual ? actual.value : value);
     if (!actual.setters[id]) {
         actual.setters[id] = createSetter(setState, id, actual);
