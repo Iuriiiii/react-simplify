@@ -1,6 +1,6 @@
 import React, { SetStateAction, useState } from "react";
 
-export type TSetter<T> = (value: T) => () => void;
+export type TSetter<T> = (value: T) => void;
 
 export interface IModifiers<T> {
     [member: string]: (state: T, ...args: any) => T | void
@@ -26,31 +26,23 @@ function useComponentId(): number {
     return useState(uid++)[0];
 }
 
-function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, element: TStoreElement<S>): TSetter<S> {
-    return (value) => {
-        element.statesSetters
-            .forEach((setState, index) => index !== id && setState(value));
+function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, element: TStoreElement<S>) {
+    return (value: S) => {
+        element.statesSetters.forEach((setState, index) => index !== id && setState(value));
 
-        return () => fn(element.value = value);
+        return fn(element.value = value);
     };
 }
 
-export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] | void {
-    if(typeof name !== 'string')
-        return console.error('Invalid data type for 1st argument of useGlobal, "string" expected.');
+export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] {
+    if (typeof name !== 'string')
+        throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
-    const id = useComponentId();
-    let actual = store[name];
+    let actual = store[name] || (store[name] = { value, setters: [], statesSetters: [] });
+    const { 1: setState } = useState(actual.value), id = useComponentId();
 
-    if (!actual)
-        actual = store[name] = { value, setters: [], statesSetters: [] };
-
-    const [, setState] = useState(actual ? actual.value : value);
-
-    if (!actual.setters[id]) {
-        actual.setters[id] = createSetter(setState, id, actual);
-        actual.statesSetters[id] = setState;
-    }
+    if (!actual.setters[id])
+        actual.setters[id] = createSetter(actual.statesSetters[id] = setState, id, actual);
 
     return [actual.value, actual.setters[id]];
 }
@@ -76,15 +68,11 @@ export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() =
         initialValue = (initialValue as (() => S))();
 
     if (typeof initialValue !== 'object')
-        return console.error(
-            'The initial state value should be an object.'
-        );
+        throw new TypeError('The initial state value should be an object.');
 
     const [state, setState] = useState(initialValue);
 
-    return [state, (value: object): () => void => {
-        return () => setState({ ...state, ...value });
-    }];
+    return [state, (value: object) => setState({ ...state, ...value })];
 }
 
 const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
