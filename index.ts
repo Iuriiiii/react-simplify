@@ -71,7 +71,7 @@ export function useGlobalMaker<S>(name: string, value?: S, modifiers?: IModifier
 export function useGlobalMaker(name: any, value?: any, modifiers?: any): unknown {
     let obj: IGlobalMaker = { name: '', initialState: null };
 
-    if (typeof name !== 'string' || typeof name !== 'object')
+    if (typeof name !== 'string' && typeof name !== 'object')
         throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
 
     if (name === 'string')
@@ -83,7 +83,7 @@ export function useGlobalMaker(name: any, value?: any, modifiers?: any): unknown
             throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
     }
 
-    return (store[name] || (store[name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
+    return (store[obj.name] || (store[obj.name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
 }
 
 export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {

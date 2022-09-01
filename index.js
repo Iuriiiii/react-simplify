@@ -35,7 +35,7 @@ function useModifier(modifierName, ...args) {
 exports.useModifier = useModifier;
 function useGlobalMaker(name, value, modifiers) {
     let obj = { name: '', initialState: null };
-    if (typeof name !== 'string' || typeof name !== 'object')
+    if (typeof name !== 'string' && typeof name !== 'object')
         throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
     if (name === 'string')
         obj = { name, initialState: value, modifiers };
@@ -44,7 +44,7 @@ function useGlobalMaker(name, value, modifiers) {
         if (obj.name === undefined || obj.initialState === undefined)
             throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
     }
-    return (store[name] || (store[name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
+    return (store[obj.name] || (store[obj.name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
 }
 exports.useGlobalMaker = useGlobalMaker;
 function useGlobal(name, value, modifiers) {
