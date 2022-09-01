@@ -77,12 +77,12 @@ export function useGlobalMaker(name: any, value?: any, modifiers?: any): unknown
     if (name === 'string')
         obj = { name, initialState: value, modifiers };
     else if (name === 'object') {
-        const obj = (name as IGlobalMaker);
+        obj = (name as IGlobalMaker);
 
         if (obj.name === undefined || obj.initialState === undefined)
             throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
     }
-
+    // console.log(obj.name, { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers });
     return (store[obj.name] || (store[obj.name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
 }
 

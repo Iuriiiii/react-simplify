@@ -40,10 +40,11 @@ function useGlobalMaker(name, value, modifiers) {
     if (name === 'string')
         obj = { name, initialState: value, modifiers };
     else if (name === 'object') {
-        const obj = name;
+        obj = name;
         if (obj.name === undefined || obj.initialState === undefined)
             throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
     }
+    // console.log(obj.name, { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers });
     return (store[obj.name] || (store[obj.name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
 }
 exports.useGlobalMaker = useGlobalMaker;
