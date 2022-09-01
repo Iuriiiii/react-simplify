@@ -43,7 +43,7 @@ function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: nu
             if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
                 throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
             
-            value = element.reducers[value.reducer](element.value, [...value.arguments, ...args]) || element.value;
+            value = element.reducers[value.reducer](element.value, ...value.arguments, ...args) || element.value;
         }
 
         element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));

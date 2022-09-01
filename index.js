@@ -20,7 +20,7 @@ function createSetter(fn, id, element) {
         if (value instanceof Modifier) {
             if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
                 throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
-            value = element.reducers[value.reducer](element.value, [...value.arguments, ...args]) || element.value;
+            value = element.reducers[value.reducer](element.value, ...value.arguments, ...args) || element.value;
         }
         element.statesSetters.forEach((setState, index) => index !== id && setState(value));
         return fn(element.value = value);
