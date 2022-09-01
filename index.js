@@ -30,7 +30,7 @@ function useModifier(modifierName, ...args) {
     if (typeof modifierName !== 'string')
         throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
     // console.log(args);
-    return new Modifier(modifierName, args);
+    return new Modifier(modifierName, ...args);
 }
 exports.useModifier = useModifier;
 function useGlobal(name, value, modifiers) {

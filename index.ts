@@ -56,7 +56,7 @@ export function useModifier(modifierName: string, ...args: any): Modifier {
     if (typeof modifierName !== 'string')
         throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
     // console.log(args);
-    return new Modifier(modifierName, args);
+    return new Modifier(modifierName, ...args);
 }
 
 export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
