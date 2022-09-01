@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useModifier = void 0;
+exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useModifier = void 0;
 const react_1 = require("react");
 class Modifier {
     modifier;
@@ -55,7 +55,7 @@ function useComplex(initialValue, modifiers) {
                     throw ReferenceError(`The modifier "${value.modifier}" does not exists for this complex state.`);
                 value = state.modifiers[value.modifier](state.value, ...value.arguments, ...args) || state.value;
             }
-            setState({ modifiers: state.modifiers, value: { ...value } });
+            setState({ modifiers: state.modifiers, value: { ...state.value, ...value } });
         }];
 }
 exports.useComplex = useComplex;
@@ -64,3 +64,35 @@ function useDarkMode() {
     return isDarkMode;
 }
 exports.useDarkMode = useDarkMode;
+function stringToNumber(text) {
+    return text.split('').reduce((acc, char) => acc += char.charCodeAt(0), 0);
+}
+function useChecker(param) {
+    if (typeof param !== 'object')
+        throw TypeError('Invalid data type for 1st argument of useChecker, "object" expected.');
+    const refs = [param];
+    let res = 0;
+    Object.keys(param).forEach(e => {
+        const value = param[e];
+        switch (typeof value) {
+            case 'number':
+                res += value;
+                break;
+            case 'string':
+                res += stringToNumber(value);
+                break;
+            case 'object':
+                if (refs.includes(value))
+                    break;
+                res += useChecker(value);
+                refs.push(value);
+                break;
+            case 'boolean':
+                res += (+value);
+                break;
+        }
+        res += stringToNumber(e);
+    });
+    return res;
+}
+exports.useChecker = useChecker;

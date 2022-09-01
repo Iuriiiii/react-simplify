@@ -119,3 +119,47 @@ const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme
 export function useDarkMode(): boolean {
     return isDarkMode;
 }
+
+function stringToNumber(text: string): number {
+    return text.split('').reduce((acc, char) => acc += char.charCodeAt(0), 0);
+}
+
+interface ICheckerParam {
+    [member: string]: any,
+    [member: number]: any
+}
+
+export function useChecker(param: ICheckerParam): number {
+    if (typeof param !== 'object')
+        throw TypeError('Invalid data type for 1st argument of useChecker, "object" expected.');
+
+    const refs = [param];
+    let res = 0;
+
+    Object.keys(param).forEach(e => {
+        const value = param[e];
+
+        switch (typeof value) {
+            case 'number':
+                res += value;
+                break;
+            case 'string':
+                res += stringToNumber(value);
+                break;
+            case 'object':
+                if (refs.includes(value))
+                    break;
+
+                res += useChecker(value);
+                refs.push(value);
+                break;
+            case 'boolean':
+                res += (+value);
+                break;
+        }
+
+        res += stringToNumber(e);
+    });
+
+    return res;
+}
