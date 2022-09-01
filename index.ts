@@ -93,7 +93,7 @@ interface ISuperStateType<T> {
 //     return [state, (value: object) => setState({ ...state, ...value })];
 // }
 
-export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S)) {
+export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S)): [S, (value: object) => void] {
     if (typeof initialValue === 'function')
         initialValue = (initialValue as (() => S))();
 
