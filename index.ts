@@ -1,6 +1,6 @@
 import React, { SetStateAction, useState } from "react";
 
-export type TSetter<T> = (value: T) => void;
+export type TSetter<T> = (value: T, ...args: any) => void;
 
 export interface IModifiers<T> {
     [member: string]: (state: T, ...args: any) => T | undefined
