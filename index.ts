@@ -110,7 +110,7 @@ export function useComplex<S>(initialValue: S | (() => S), modifiers?: IModifier
             value = state.modifiers[value.modifier](state.value, ...value.arguments, ...args) || state.value;
         }
 
-        setState({ modifiers: state.modifiers, value: { ...value as S } })
+        setState({ modifiers: state.modifiers, value: { ...state.value, ...value } })
     }];
 }
 
