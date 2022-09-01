@@ -74,9 +74,9 @@ export function useGlobalMaker(name: any, value?: any, modifiers?: any): unknown
     if (typeof name !== 'string' && typeof name !== 'object')
         throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
 
-    if (name === 'string')
+    if (typeof name === 'string')
         obj = { name, initialState: value, modifiers };
-    else if (name === 'object') {
+    else if (typeof name === 'object') {
         obj = (name as IGlobalMaker);
 
         if (obj.name === undefined || obj.initialState === undefined)

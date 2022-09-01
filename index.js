@@ -37,9 +37,9 @@ function useGlobalMaker(name, value, modifiers) {
     let obj = { name: '', initialState: null };
     if (typeof name !== 'string' && typeof name !== 'object')
         throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
-    if (name === 'string')
+    if (typeof name === 'string')
         obj = { name, initialState: value, modifiers };
-    else if (name === 'object') {
+    else if (typeof name === 'object') {
         obj = name;
         if (obj.name === undefined || obj.initialState === undefined)
             throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
