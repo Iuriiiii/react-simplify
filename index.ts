@@ -6,12 +6,12 @@ export interface IModifiers<T> {
     [member: string]: (state: T, ...args: any) => T | undefined
 }
 
-type TModifierData = { reducer: string, arguments: any[] }
+type TModifierData = { modifier: string, arguments: any[] }
 
 type TStoreElement<T> = {
     name: string,
     value: T,
-    reducers?: IModifiers<T>,
+    modifiers?: IModifiers<T>,
     setters: Array<TSetter<T>>,
     statesSetters: Array<React.Dispatch<SetStateAction<T>>>
 };
@@ -21,11 +21,11 @@ interface IStore {
 }
 
 class Modifier implements TModifierData {
-    reducer: string;
+    modifier: string;
     arguments: any[];
 
-    constructor(reducer: string, ...args: any) {
-        this.reducer = reducer;
+    constructor(modifier: string, ...args: any) {
+        this.modifier = modifier;
         this.arguments = args;
     }
 }
@@ -40,10 +40,10 @@ function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: nu
     return (value: S | Modifier, ...args: any) => {
 
         if (value instanceof Modifier) {
-            if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
-                throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
+            if (element.modifiers === undefined || element.modifiers[value.modifier] === undefined)
+                throw ReferenceError(`The modifier "${value.modifier}" does not exists within the global state "${element.name}".`);
 
-            value = element.reducers[value.reducer](element.value, ...value.arguments, ...args) || element.value;
+            value = element.modifiers[value.modifier](element.value, ...value.arguments, ...args) || element.value;
         }
 
         element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));
@@ -63,7 +63,7 @@ export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>)
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
-    let actual = store[name] || (store[name] = { name, value, setters: [], statesSetters: [], reducers: modifiers });
+    let actual = store[name] || (store[name] = { name, value, setters: [], statesSetters: [], modifiers: modifiers });
     const { 1: setState } = useState(actual.value), id = useComponentId();
 
     if (!actual.setters[id])
@@ -71,11 +71,6 @@ export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>)
 
     return [actual.value, actual.setters[id]];
 }
-
-// interface ISuperStateContent<T> {
-//     value: T,
-//     reducers?: IModifiers<T>
-// }
 
 interface ISuperStateType<T> {
     [member: string]: any
@@ -93,16 +88,30 @@ interface ISuperStateType<T> {
 //     return [state, (value: object) => setState({ ...state, ...value })];
 // }
 
-export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S)): [S, (value: object) => void] {
+interface IComplex<T> {
+    value: T,
+    modifiers?: IModifiers<T>
+}
+
+export function useComplex<S>(initialValue: S | (() => S), modifiers?: IModifiers<S>): [S, (value: object) => void] {
     if (typeof initialValue === 'function')
         initialValue = (initialValue as (() => S))();
 
     if (typeof initialValue !== 'object')
         throw new TypeError('The initial state value should be an object.');
 
-    const [state, setState] = useState(initialValue);
+    const [state, setState] = useState<IComplex<S>>({ value: initialValue, modifiers });
 
-    return [state, (value: object) => setState({ ...state, ...value })];
+    return [state.value, (value: object | S | Modifier, ...args: any) => {
+        if (value instanceof Modifier) {
+            if (state.modifiers === undefined || state.modifiers[value.modifier] === undefined)
+                throw ReferenceError(`The modifier "${value.modifier}" does not exists for this complex state.`);
+
+            value = state.modifiers[value.modifier](state.value, ...value.arguments, ...args) || state.value;
+        }
+
+        setState({ modifiers: state.modifiers, value: { ...value as S } })
+    }];
 }
 
 const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
