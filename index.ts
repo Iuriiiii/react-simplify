@@ -3,13 +3,14 @@ import React, { SetStateAction, useState } from "react";
 export type TSetter<T> = (value: T) => void;
 
 export interface IModifiers<T> {
-    [member: string]: (state: T, ...args: any) => T | void
+    [member: string]: (state: T, ...args: any) => T | undefined
 }
 
-// export type TModifierData = { reducer: string, arguments: any[] }
+type TModifierData = { reducer: string, arguments: any[] }
 
 type TStoreElement<T> = {
-    value: any,
+    name: string,
+    value: T,
     reducers?: IModifiers<T>,
     setters: Array<TSetter<T>>,
     statesSetters: Array<React.Dispatch<SetStateAction<T>>>
@@ -19,6 +20,16 @@ interface IStore {
     [member: string]: TStoreElement<any>
 }
 
+class Modifier implements TModifierData {
+    reducer: string;
+    arguments: any[];
+
+    constructor(reducer: string, ...args: any) {
+        this.reducer = reducer;
+        this.arguments = [...arguments];
+    }
+}
+
 
 const store: IStore = {}; var uid = 0;
 
@@ -26,19 +37,34 @@ function useComponentId(): number {
     return useState(uid++)[0];
 }
 
-function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, element: TStoreElement<S>) {
-    return (value: S) => {
-        element.statesSetters.forEach((setState, index) => index !== id && setState(value));
+function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: number, element: TStoreElement<S>) {
+    return (value: S | Modifier) => {
 
-        return fn(element.value = value);
+        if (value instanceof Modifier) {
+            if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
+                throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
+                
+            value = (element.reducers[value.reducer])(element.value, value.arguments) || element.value;
+        }
+
+        element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));
+
+        return fn(element.value = (value as S));
     };
 }
 
-export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] {
+export function useModifier(modifierName: string, ...args: any): Modifier {
+    if (typeof modifierName !== 'string')
+        throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
+
+    return new Modifier(modifierName, args);
+}
+
+export function useGlobal<S>(name: string, value: S, reducers?: IModifiers<S>): [S, TSetter<S>] {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
-    let actual = store[name] || (store[name] = { value, setters: [], statesSetters: [] });
+    let actual = store[name] || (store[name] = { name, value, setters: [], statesSetters: [], reducers });
     const { 1: setState } = useState(actual.value), id = useComponentId();
 
     if (!actual.setters[id])
@@ -46,13 +72,6 @@ export function useGlobal<S>(name: string, value: S): [S, TSetter<S>] {
 
     return [actual.value, actual.setters[id]];
 }
-
-// export function useModifier(modifierName: string, ...args: any): TModifierData {
-//     // if (typeof modifierName !== 'string')
-//     //     return console.error('Invalid data type argument for useModifier, "string" expected.');
-
-//     return { reducer: modifierName, arguments: [...args] };
-// }
 
 // interface ISuperStateContent<T> {
 //     value: T,
