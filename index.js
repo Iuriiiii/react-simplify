@@ -43,7 +43,15 @@ function useGlobal(name, value, modifiers) {
     return [actual.value, actual.setters[id]];
 }
 exports.useGlobal = useGlobal;
-function useComplex(initialValue, reducers) {
+// export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S), modifiers?: IModifiers<S>) {
+//     if (typeof initialValue === 'function')
+//         initialValue = (initialValue as (() => S))();
+//     if (typeof initialValue !== 'object')
+//         throw new TypeError('The initial state value should be an object.');
+//     const [state, setState] = useState(initialValue);
+//     return [state, (value: object) => setState({ ...state, ...value })];
+// }
+function useComplex(initialValue) {
     if (typeof initialValue === 'function')
         initialValue = initialValue();
     if (typeof initialValue !== 'object')
