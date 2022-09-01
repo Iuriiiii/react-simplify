@@ -42,7 +42,7 @@ function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: nu
         if (value instanceof Modifier) {
             if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
                 throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
-            
+
             value = element.reducers[value.reducer](element.value, ...value.arguments, ...args) || element.value;
         }
 
@@ -81,7 +81,19 @@ interface ISuperStateType<T> {
     [member: string]: any
 }
 
-export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S), reducers?: IModifiers<S>) {
+// export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S), modifiers?: IModifiers<S>) {
+//     if (typeof initialValue === 'function')
+//         initialValue = (initialValue as (() => S))();
+
+//     if (typeof initialValue !== 'object')
+//         throw new TypeError('The initial state value should be an object.');
+
+//     const [state, setState] = useState(initialValue);
+
+//     return [state, (value: object) => setState({ ...state, ...value })];
+// }
+
+export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S)) {
     if (typeof initialValue === 'function')
         initialValue = (initialValue as (() => S))();
 
