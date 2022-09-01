@@ -34,7 +34,7 @@ function useModifier(modifierName, ...args) {
 }
 exports.useModifier = useModifier;
 function useGlobalMaker(name, value, modifiers) {
-    let obj = { name: '', initialState: null };
+    let obj;
     if (typeof name !== 'string' && typeof name !== 'object')
         throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
     if (typeof name === 'string')

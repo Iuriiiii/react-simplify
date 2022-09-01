@@ -59,17 +59,17 @@ export function useModifier(modifierName: string, ...args: any): Modifier {
     return new Modifier(modifierName, ...args);
 }
 
-interface IGlobalMaker {
+interface IGlobalMaker<T> {
     name: string,
-    initialState: any,
-    modifiers?: IModifiers<any>,
-    reducers?: IModifiers<any>
+    initialState: T,
+    modifiers?: IModifiers<T>,
+    reducers?: IModifiers<T>
 }
 
-export function useGlobalMaker<S>(param: IGlobalMaker): S;
+export function useGlobalMaker<S>(param: IGlobalMaker<IGlobalMaker<S>['initialState']>): S;
 export function useGlobalMaker<S>(name: string, value?: S, modifiers?: IModifiers<S>): S;
-export function useGlobalMaker(name: any, value?: any, modifiers?: any): any {
-    let obj: IGlobalMaker = { name: '', initialState: null };
+export function useGlobalMaker<S>(name: any, value?: any, modifiers?: any): any {
+    let obj: IGlobalMaker<S>;
 
     if (typeof name !== 'string' && typeof name !== 'object')
         throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
@@ -77,13 +77,13 @@ export function useGlobalMaker(name: any, value?: any, modifiers?: any): any {
     if (typeof name === 'string')
         obj = { name, initialState: value, modifiers };
     else if (typeof name === 'object') {
-        obj = (name as IGlobalMaker);
+        obj = (name as IGlobalMaker<S>);
 
         if (obj.name === undefined || obj.initialState === undefined)
             throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
     }
     // console.log(obj.name, { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers });
-    return (store[obj.name] || (store[obj.name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
+    return (store[obj!.name] || (store[obj!.name] = { name: obj!.name, value: obj!.initialState, setters: [], statesSetters: [], modifiers: obj!.modifiers || obj!.reducers })).value;
 }
 
 export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
