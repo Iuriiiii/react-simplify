@@ -59,11 +59,31 @@ export function useModifier(modifierName: string, ...args: any): Modifier {
     return new Modifier(modifierName, ...args);
 }
 
-export function useNewGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): S {
-    if (typeof name !== 'string')
-        throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
+interface IGlobalMaker {
+    name: string,
+    initialState: unknown,
+    modifiers?: IModifiers<unknown>,
+    reducers?: IModifiers<unknown>
+}
 
-    return (store[name] || (store[name] = { name, value, setters: [], statesSetters: [], modifiers: modifiers })).value;
+export function useGlobalMaker<S>(param: IGlobalMaker): S;
+export function useGlobalMaker<S>(name: string, value?: S, modifiers?: IModifiers<S>): S;
+export function useGlobalMaker(name: any, value?: any, modifiers?: any): unknown {
+    let obj: IGlobalMaker = { name: '', initialState: null };
+
+    if (typeof name !== 'string' || typeof name !== 'object')
+        throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
+
+    if (name === 'string')
+        obj = { name, initialState: value, modifiers };
+    else if (name === 'object') {
+        const obj = (name as IGlobalMaker);
+
+        if (obj.name === undefined || obj.initialState === undefined)
+            throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
+    }
+
+    return (store[name] || (store[name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
 }
 
 export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useNewGlobal = exports.useModifier = void 0;
+exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useGlobalMaker = exports.useModifier = void 0;
 const react_1 = require("react");
 class Modifier {
     modifier;
@@ -33,12 +33,20 @@ function useModifier(modifierName, ...args) {
     return new Modifier(modifierName, ...args);
 }
 exports.useModifier = useModifier;
-function useNewGlobal(name, value, modifiers) {
-    if (typeof name !== 'string')
-        throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
-    return (store[name] || (store[name] = { name, value, setters: [], statesSetters: [], modifiers: modifiers })).value;
+function useGlobalMaker(name, value, modifiers) {
+    let obj = { name: '', initialState: null };
+    if (typeof name !== 'string' || typeof name !== 'object')
+        throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
+    if (name === 'string')
+        obj = { name, initialState: value, modifiers };
+    else if (name === 'object') {
+        const obj = name;
+        if (obj.name === undefined || obj.initialState === undefined)
+            throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
+    }
+    return (store[name] || (store[name] = { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers })).value;
 }
-exports.useNewGlobal = useNewGlobal;
+exports.useGlobalMaker = useGlobalMaker;
 function useGlobal(name, value, modifiers) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
