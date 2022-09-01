@@ -59,7 +59,7 @@ export function useModifier(modifierName: string, ...args: any): Modifier {
     return new Modifier(modifierName, args);
 }
 
-export function useGlobal<S>(name: string, value: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
+export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
