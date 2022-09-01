@@ -61,14 +61,14 @@ export function useModifier(modifierName: string, ...args: any): Modifier {
 
 interface IGlobalMaker {
     name: string,
-    initialState: unknown,
-    modifiers?: IModifiers<unknown>,
-    reducers?: IModifiers<unknown>
+    initialState: any,
+    modifiers?: IModifiers<any>,
+    reducers?: IModifiers<any>
 }
 
 export function useGlobalMaker<S>(param: IGlobalMaker): S;
 export function useGlobalMaker<S>(name: string, value?: S, modifiers?: IModifiers<S>): S;
-export function useGlobalMaker(name: any, value?: any, modifiers?: any): unknown {
+export function useGlobalMaker(name: any, value?: any, modifiers?: any): any {
     let obj: IGlobalMaker = { name: '', initialState: null };
 
     if (typeof name !== 'string' && typeof name !== 'object')
