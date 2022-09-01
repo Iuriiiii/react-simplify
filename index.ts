@@ -26,7 +26,7 @@ class Modifier implements TModifierData {
 
     constructor(reducer: string, ...args: any) {
         this.reducer = reducer;
-        this.arguments = [...arguments];
+        this.arguments = [...args];
     }
 }
 
@@ -36,15 +36,16 @@ const store: IStore = {}; var uid = 0;
 function useComponentId(): number {
     return useState(uid++)[0];
 }
-
 function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: number, element: TStoreElement<S>) {
     return (value: S | Modifier) => {
 
         if (value instanceof Modifier) {
             if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
                 throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
-                
-            value = (element.reducers[value.reducer])(element.value, value.arguments) || element.value;
+            
+            // console.log('AFTER: element.value', element.value, 'value.arguments', value.arguments, 'value', value);
+            value = element.reducers[value.reducer](element.value, value.arguments) || element.value;
+            // console.log('element.value', element.value, 'value', value);
         }
 
         element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));
@@ -56,15 +57,15 @@ function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: nu
 export function useModifier(modifierName: string, ...args: any): Modifier {
     if (typeof modifierName !== 'string')
         throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
-
+    // console.log(args);
     return new Modifier(modifierName, args);
 }
 
-export function useGlobal<S>(name: string, value: S, reducers?: IModifiers<S>): [S, TSetter<S>] {
+export function useGlobal<S>(name: string, value: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
-    let actual = store[name] || (store[name] = { name, value, setters: [], statesSetters: [], reducers });
+    let actual = store[name] || (store[name] = { name, value, setters: [], statesSetters: [], reducers: modifiers });
     const { 1: setState } = useState(actual.value), id = useComponentId();
 
     if (!actual.setters[id])
