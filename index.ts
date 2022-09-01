@@ -59,6 +59,13 @@ export function useModifier(modifierName: string, ...args: any): Modifier {
     return new Modifier(modifierName, ...args);
 }
 
+export function useNewGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): S {
+    if (typeof name !== 'string')
+        throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
+
+    return (store[name] || (store[name] = { name, value, setters: [], statesSetters: [], modifiers: modifiers })).value;
+}
+
 export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
