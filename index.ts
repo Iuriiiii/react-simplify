@@ -26,7 +26,7 @@ class Modifier implements TModifierData {
 
     constructor(reducer: string, ...args: any) {
         this.reducer = reducer;
-        this.arguments = [...args];
+        this.arguments = args;
     }
 }
 
@@ -37,15 +37,13 @@ function useComponentId(): number {
     return useState(uid++)[0];
 }
 function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: number, element: TStoreElement<S>) {
-    return (value: S | Modifier) => {
+    return (value: S | Modifier, ...args: any) => {
 
         if (value instanceof Modifier) {
             if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
                 throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
             
-            // console.log('AFTER: element.value', element.value, 'value.arguments', value.arguments, 'value', value);
-            value = element.reducers[value.reducer](element.value, value.arguments) || element.value;
-            // console.log('element.value', element.value, 'value', value);
+            value = element.reducers[value.reducer](element.value, [...value.arguments, ...args]) || element.value;
         }
 
         element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));

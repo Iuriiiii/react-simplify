@@ -7,7 +7,7 @@ class Modifier {
     arguments;
     constructor(reducer, ...args) {
         this.reducer = reducer;
-        this.arguments = [...args];
+        this.arguments = args;
     }
 }
 const store = {};
@@ -16,13 +16,11 @@ function useComponentId() {
     return (0, react_1.useState)(uid++)[0];
 }
 function createSetter(fn, id, element) {
-    return (value) => {
+    return (value, ...args) => {
         if (value instanceof Modifier) {
             if (element.reducers === undefined || element.reducers[value.reducer] === undefined)
                 throw ReferenceError(`The modifier/reducer "${value.reducer}" does not exists within the global state "${element.name}".`);
-            // console.log('AFTER: element.value', element.value, 'value.arguments', value.arguments, 'value', value);
-            value = element.reducers[value.reducer](element.value, value.arguments) || element.value;
-            // console.log('element.value', element.value, 'value', value);
+            value = element.reducers[value.reducer](element.value, [...value.arguments, ...args]) || element.value;
         }
         element.statesSetters.forEach((setState, index) => index !== id && setState(value));
         return fn(element.value = value);
