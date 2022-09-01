@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useModifier = void 0;
+exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useNewGlobal = exports.useModifier = void 0;
 const react_1 = require("react");
 class Modifier {
     modifier;
@@ -33,6 +33,12 @@ function useModifier(modifierName, ...args) {
     return new Modifier(modifierName, ...args);
 }
 exports.useModifier = useModifier;
+function useNewGlobal(name, value, modifiers) {
+    if (typeof name !== 'string')
+        throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
+    return (store[name] || (store[name] = { name, value, setters: [], statesSetters: [], modifiers: modifiers })).value;
+}
+exports.useNewGlobal = useNewGlobal;
 function useGlobal(name, value, modifiers) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
