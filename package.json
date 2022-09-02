@@ -4,7 +4,6 @@
   "description": "Simplifying life of React coders",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --project tsconfig.json"
   },
   "repository": {

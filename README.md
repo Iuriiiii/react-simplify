@@ -6,7 +6,7 @@ This library will support you to write less and do more.
 
 The idea of this library was implement an easy way to use global states.
 
-    npm i https://github.com/Iuriiiii/react-simplify.git
+    npm i react-simplify
 
 ## Usage
 
