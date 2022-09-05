@@ -156,7 +156,10 @@ interface ICheckerParam {
     [member: number]: any
 }
 
-export function useChecker(param: ICheckerParam): number {
+export function useChecker(param?: ICheckerParam): number {
+    if(!param)
+        return 0;
+
     if (typeof param !== 'object')
         throw TypeError('Invalid data type for 1st argument of useChecker, "object" expected.');
 
