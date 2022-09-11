@@ -2,8 +2,9 @@ import React, { SetStateAction, useState } from "react";
 
 export type TSetter<T> = (value: T, ...args: any) => void;
 
+type TModifiersCallback<T> = (state: T, ...args: any) => T | any
 export interface IModifiers<T> {
-    [member: string]: (state: T, ...args: any) => T | undefined
+    [member: string]: TModifiersCallback<T>
 }
 
 type TModifierData = { modifier: string, arguments: any[] }
@@ -36,15 +37,22 @@ const store: IStore = {}; var uid = 0;
 function useComponentId(): number {
     return useState(uid++)[0];
 }
-function createSetter<S>(fn: React.Dispatch<SetStateAction<S | unknown>>, id: number, element: TStoreElement<S>) {
-    return (value: S | Modifier, ...args: any) => {
+
+function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, element: TStoreElement<S>) {
+    return (value: S | Modifier | ((modifiers: IModifiers<S>) => TModifiersCallback<S>), ...args: any) => {
 
         if (value instanceof Modifier) {
             if (element.modifiers === undefined || element.modifiers[value.modifier] === undefined)
                 throw ReferenceError(`The modifier "${value.modifier}" does not exists within the global state "${element.name}".`);
 
             value = element.modifiers[value.modifier](element.value, ...value.arguments, ...args) || element.value;
+        } else if (value instanceof Function) {
+            if (element.modifiers === undefined || typeof element.modifiers !== 'object')
+                throw TypeError('Invalid data type of member "modifiers" of useGlobal/useGlobalMaker, "object" expected.');
+
+            value = value(element.modifiers)(element.value, ...args) || element.value;
         }
+
 
         element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));
 
@@ -86,7 +94,7 @@ export function useGlobalMaker<S>(name: any, value?: any, modifiers?: any): any 
     return (store[obj!.name] || (store[obj!.name] = { name: obj!.name, value: obj!.initialState, setters: [], statesSetters: [], modifiers: obj!.modifiers || obj!.reducers })).value;
 }
 
-export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>): [S, TSetter<S | Modifier>] {
+export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
@@ -96,49 +104,50 @@ export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>)
     if (!actual.setters[id])
         actual.setters[id] = createSetter(actual.statesSetters[id] = setState, id, actual);
 
-    return [actual.value, actual.setters[id]];
+    return [actual.value, actual.setters[id]] as [S, TSetter<S | Modifier | ((modifiers: IModifiers<S>) => TModifiersCallback<S>)>];
 }
-
-interface ISuperStateType<T> {
-    [member: string]: any
-}
-
-// export function useComplex<S extends ISuperStateType<S>>(initialValue: S | (() => S), modifiers?: IModifiers<S>) {
-//     if (typeof initialValue === 'function')
-//         initialValue = (initialValue as (() => S))();
-
-//     if (typeof initialValue !== 'object')
-//         throw new TypeError('The initial state value should be an object.');
-
-//     const [state, setState] = useState(initialValue);
-
-//     return [state, (value: object) => setState({ ...state, ...value })];
-// }
 
 interface IComplex<T> {
     value: T,
     modifiers?: IModifiers<T>
 }
 
-export function useComplex<S>(initialValue: S | (() => S), modifiers?: IModifiers<S>): [S, (value: object) => void] {
-    if (typeof initialValue === 'function')
-        initialValue = (initialValue as (() => S))();
+// interface A {
+//     a: number
+// }
+
+// const [state, setState] = useComplex<A>({ a: 1 }, {
+//     increase: (state) => state.a + 1
+// });
+
+// setState((state) => state.increase);
+
+/* TODO: FIX IN THE FUTURE THE INFERENCE OF M GENERIC TYPE */
+/* Is not my fault, https://github.com/microsoft/TypeScript/issues/10571 */
+export function useComplex<S extends object | (() => S), M extends IModifiers<S> = IModifiers<S>>(initialValue: S, modifiers?: M) {
+    if (initialValue instanceof Function)
+        initialValue = initialValue();
 
     if (typeof initialValue !== 'object')
-        throw new TypeError('The initial state value should be an object.');
+        throw TypeError('Invalid data type for 1st argument of useComplex, "object" expected.');
 
     const [state, setState] = useState<IComplex<S>>({ value: initialValue, modifiers });
 
-    return [state.value, (value: object | S | Modifier, ...args: any) => {
+    return [state.value, (value: Partial<S | object> | Modifier | ((modifiers: M) => TModifiersCallback<S>), ...args: any) => {
         if (value instanceof Modifier) {
             if (state.modifiers === undefined || state.modifiers[value.modifier] === undefined)
                 throw ReferenceError(`The modifier "${value.modifier}" does not exists for this complex state.`);
 
             value = state.modifiers[value.modifier](state.value, ...value.arguments, ...args) || state.value;
+        } else if (value instanceof Function) {
+            if (modifiers === undefined || typeof modifiers !== 'object')
+                throw TypeError('Invalid data type for 3rd argument of useComplex, "object" expected.');
+
+            value = value(modifiers)(state.value, ...args) || state.value;
         }
 
         setState({ modifiers: state.modifiers, value: { ...state.value, ...value } })
-    }];
+    }] as const // [S, (value: Partial<S | object> | Omit<Modifier, keyof TModifierData> | ((state: M) => TModifiersCallback<S>), ...args: any) => void];
 }
 
 const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -148,16 +157,15 @@ export function useDarkMode(): boolean {
 }
 
 function stringToNumber(text: string): number {
-    return text.split('').reduce((acc, char) => acc += char.charCodeAt(0), 0);
+    return text.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
 }
 
 interface ICheckerParam {
-    [member: string]: any,
-    [member: number]: any
+    [member: string | number]: any
 }
 
 export function useChecker(param?: ICheckerParam): number {
-    if(!param)
+    if (!param)
         return 0;
 
     if (typeof param !== 'object')

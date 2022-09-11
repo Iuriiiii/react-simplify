@@ -1,8 +1,8 @@
 {
   "name": "react-simplify",
-  "version": "1.5.8",
+  "version": "1.5.10",
   "description": "Simplifying life of React coders",
-  "main": "index.js",
+  "main": "index",
   "scripts": {
     "build": "tsc --project tsconfig.json"
   },
@@ -12,7 +12,7 @@
   },
   "keywords": [],
   "author": "Iuriiiii",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@types/react": "^18.0.17",
     "react": "^18.2.0"

@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  height: 100vh;
+}
+
+.App {
+  background-color: #1a305d29;
+  padding: 30px;
+  border-radius: 10px;
+}
+
+.box-container {
+  display: flex;
+  flex-flow: row nowrap;
+  column-gap: 20px;
+}
+
+.CheckViewer {
+  text-align: center;
+
+}
