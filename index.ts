@@ -157,7 +157,7 @@ export function useDarkMode(): boolean {
 }
 
 function stringToNumber(text: string): number {
-    return text.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
+    return textasd.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
 }
 
 interface ICheckerParam {
