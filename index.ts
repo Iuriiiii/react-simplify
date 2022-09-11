@@ -1,8 +1,33 @@
+/*
+MIT License
+
+Copyright (c) Iuriiiii
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 import React, { SetStateAction, useState } from "react";
 
 var uid = 0;
 
 type TModifier<T> = (state: T, ...args: any) => any;
+type TModifierCaller<T> = (m: TModifiers<T>) => TModifier<T>;
 type TModifiers<T> = { [name: string]: TModifier<T> }
 
 interface IStoreElement<V> {
@@ -24,8 +49,67 @@ function createGlobalIfNeeded<V>(name: string, initialState: V, modifiers?: TMod
     return store[name] || (store[name] = { setStaters: [], modifiers, currentValue: initialState });
 }
 
-export function useGlobalMaker<V>(name: string, initialState: V, modifiers?: TModifiers<V>): void {
+interface IGlobalMaker<T> {
+    name: string,
+    initialState: T,
+    modifiers?: TModifiers<T>,
+    reducers?: TModifiers<T>
+}
+
+export function useGlobalMaker<V>(param: IGlobalMaker<IGlobalMaker<V>['initialState']>): void;
+export function useGlobalMaker<V>(name: string, initialState: V, modifiers?: TModifiers<V>): void;
+export function useGlobalMaker<V>(param1: any, param2?: any, param3?: any): void {
+    let name: string, initialState: V, modifiers: TModifiers<V>;
+
+    if (typeof param1 === 'object') {
+        if (typeof param1.name !== 'string')
+            throw TypeError(`Invalid data type of "name" for useGlobalMaker, "string" expected.`);
+
+        name = param1.name, initialState = param1.initialState, modifiers = param1.modifiers || param1.reducers;
+    } else
+        name = param1, initialState = param2, modifiers = param3;
+
+    if (typeof modifiers !== 'object')
+        throw TypeError(`Invalid data type of "modifiers" for useGlobalMaker, "object" expected.`);
+
     createGlobalIfNeeded(name, initialState, modifiers);
+}
+
+interface IValueGetter<V> {
+    value: V | TModifierCaller<V> | string,
+    currentValue: V,
+    modifiers?: TModifiers<V>,
+    noModifiersErrorMessage: string,
+    args: any[]
+}
+
+function getValue<V>(param: IValueGetter<V>): V {
+    if (typeof param.value === 'string' && param.value.startsWith('@')) {
+        const modifier = param.value as string;
+        param.value = (modifiers) => modifiers[modifier.substring(1)];
+    }
+
+    if (param.value instanceof Function) {
+        if (param.modifiers === undefined)
+            throw ReferenceError(param.noModifiersErrorMessage);
+
+        const modifier = param.value(param.modifiers!);
+
+        if (!(modifier instanceof Function))
+            throw ReferenceError(`Invalid modifier, function expected.`);
+
+        const modifierResult = modifier(param.currentValue!, ...param.args);
+
+        return modifierResult === undefined ? param.currentValue : modifierResult;
+    } else
+        return param.value as V;
+}
+
+export function useModifier(modifierName: string): string {
+    if (typeof modifierName !== 'string')
+        throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
+
+    return modifierName.startsWith('@') ? modifierName : `@${modifierName}`;
 }
 
 export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifiers<V>) {
@@ -34,21 +118,44 @@ export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifi
 
     const globalState: IStoreElement<V> = createGlobalIfNeeded(name, initialState!, modifiers);
     const id = useComponentId(); // This number will be the same for each component.
-    globalState.setStaters[id] ||= useState(initialState)[1] as React.Dispatch<SetStateAction<V>>;
+    const { 1: setState } = useState(initialState);
+    globalState.setStaters[id] ||= setState as React.Dispatch<SetStateAction<V>>;
 
-    return [globalState.currentValue!, (newState: V | ((m: TModifiers<V>) => TModifier<V>), ...args: any) => {
-        if (newState instanceof Function) {
-            if (modifiers === undefined)
-                throw ReferenceError(`Impossible reference modificator of global state "${name}", modifiers argument was undefined.`);
-
-            const modifierResult = newState(modifiers)(globalState.currentValue!, ...args);
-
-            newState = modifierResult === undefined ? globalState.currentValue : modifierResult;
-        }
-
-        globalState.currentValue = newState as V;
+    return [globalState.currentValue!, (newState: V | TModifierCaller<V> | string, ...args: any) => {
+        globalState.currentValue = getValue({
+            value: newState,
+            currentValue: globalState.currentValue!,
+            args,
+            modifiers: globalState.modifiers || modifiers,
+            noModifiersErrorMessage: `Impossible reference modificator of global state "${name}", modifiers argument was undefined.`
+        });
 
         globalState.setStaters.forEach((setStater) => setStater(globalState.currentValue!));
+    }] as const;
+}
+
+export function useComplex<V extends object | (() => V)>(initialState: V, modifiers?: TModifiers<V>) {
+    if (initialState instanceof Function)
+        initialState = initialState();
+
+    if (typeof initialState !== 'object')
+        throw new TypeError('Invalid data type for 1st argument of useComplext, "object" expected.');
+
+    const [state, setState] = useState(initialState);
+
+    return [state, (newState: Partial<V> | object | TModifierCaller<V> | string, ...args: any) => {
+        const currentValue = getValue({
+            value: newState as V | TModifierCaller<V> | string,
+            currentValue: state,
+            args,
+            modifiers: modifiers,
+            noModifiersErrorMessage: `Impossible reference modificator of useComplex, modifiers argument was undefined.`
+        });
+
+        if (typeof currentValue !== 'object')
+            throw TypeError(`Invalid return type of modifier, "object" expected.`);
+
+        setState({ ...state, ...currentValue });
     }] as const;
 }
 
@@ -92,6 +199,8 @@ export function useChecker(param?: ICheckerParam): number {
             case 'boolean':
                 res += (+value);
                 break;
+            case 'undefined':
+                return;
         }
 
         res += stringToNumber(e);

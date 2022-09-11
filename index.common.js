@@ -1,13 +1,16 @@
-import { useState } from "react";
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useModifier = exports.useGlobalMaker = void 0;
+const react_1 = require("react");
 var uid = 0;
 const store = {};
 function useComponentId() {
-    return useState(uid++)[0];
+    return (0, react_1.useState)(uid++)[0];
 }
 function createGlobalIfNeeded(name, initialState, modifiers) {
     return store[name] || (store[name] = { setStaters: [], modifiers, currentValue: initialState });
 }
-export function useGlobalMaker(param1, param2, param3) {
+function useGlobalMaker(param1, param2, param3) {
     let name, initialState, modifiers;
     if (typeof param1 === 'object') {
         if (typeof param1.name !== 'string')
@@ -20,6 +23,7 @@ export function useGlobalMaker(param1, param2, param3) {
         throw TypeError(`Invalid data type of "modifiers" for useGlobalMaker, "object" expected.`);
     createGlobalIfNeeded(name, initialState, modifiers);
 }
+exports.useGlobalMaker = useGlobalMaker;
 function getValue(param) {
     if (typeof param.value === 'string' && param.value.startsWith('@')) {
         const modifier = param.value;
@@ -37,17 +41,18 @@ function getValue(param) {
     else
         return param.value;
 }
-export function useModifier(modifierName) {
+function useModifier(modifierName) {
     if (typeof modifierName !== 'string')
         throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
     return modifierName.startsWith('@') ? modifierName : `@${modifierName}`;
 }
-export function useGlobal(name, initialState, modifiers) {
+exports.useModifier = useModifier;
+function useGlobal(name, initialState, modifiers) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
     const globalState = createGlobalIfNeeded(name, initialState, modifiers);
     const id = useComponentId();
-    const { 1: setState } = useState(initialState);
+    const { 1: setState } = (0, react_1.useState)(initialState);
     globalState.setStaters[id] ||= setState;
     return [globalState.currentValue, (newState, ...args) => {
             globalState.currentValue = getValue({
@@ -60,12 +65,13 @@ export function useGlobal(name, initialState, modifiers) {
             globalState.setStaters.forEach((setStater) => setStater(globalState.currentValue));
         }];
 }
-export function useComplex(initialState, modifiers) {
+exports.useGlobal = useGlobal;
+function useComplex(initialState, modifiers) {
     if (initialState instanceof Function)
         initialState = initialState();
     if (typeof initialState !== 'object')
         throw new TypeError('Invalid data type for 1st argument of useComplext, "object" expected.');
-    const [state, setState] = useState(initialState);
+    const [state, setState] = (0, react_1.useState)(initialState);
     return [state, (newState, ...args) => {
             const currentValue = getValue({
                 value: newState,
@@ -79,11 +85,13 @@ export function useComplex(initialState, modifiers) {
             setState({ ...state, ...currentValue });
         }];
 }
-export function useDarkMode() {
+exports.useComplex = useComplex;
+function useDarkMode() {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
+exports.useDarkMode = useDarkMode;
 const stringToNumber = (text) => text.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
-export function useChecker(param) {
+function useChecker(param) {
     if (!param)
         return 0;
     if (typeof param !== 'object')
@@ -115,4 +123,5 @@ export function useChecker(param) {
     });
     return res;
 }
+exports.useChecker = useChecker;
 //# sourceMappingURL=index.js.map

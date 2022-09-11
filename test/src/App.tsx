@@ -7,10 +7,20 @@ import CheckerViewer from './components/CheckerViewer'
 import { useGlobalMaker } from '../..'
 
 function App() {
-  useGlobalMaker('myGlobal', 0, {
-    increase: (state) => state + 1,
-    decrease: (state) => state - 1,
-    increaseBy: (state, value) => state + value
+  // useGlobalMaker('myGlobal', 0, {
+  //   increase: (state) => state + 1,
+  //   decrease: (state) => state - 1,
+  //   increaseBy: (state, value) => state + value
+  // });
+
+  useGlobalMaker({
+    name: 'myGlobal',
+    initialState: 0,
+    modifiers: {
+      increase: (state) => state + 1,
+      decrease: (state) => state - 1,
+      increaseBy: (state, value) => state + value
+    }
   });
 
   return (
