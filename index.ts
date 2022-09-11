@@ -1,164 +1,62 @@
 import React, { SetStateAction, useState } from "react";
 
-export type TSetter<T> = (value: T, ...args: any) => void;
+var uid = 0;
 
-type TModifiersCallback<T> = (state: T, ...args: any) => T | any
-export interface IModifiers<T> {
-    [member: string]: TModifiersCallback<T>
+type TModifier<T> = (state: T, ...args: any) => any;
+type TModifiers<T> = { [name: string]: TModifier<T> }
+
+interface IStoreElement<V> {
+    currentValue?: V,
+    modifiers?: TModifiers<V>,
+    setStaters: Array<React.Dispatch<SetStateAction<V>>>
+}
+interface IStore<V> {
+    [name: string]: IStoreElement<V>
 }
 
-type TModifierData = { modifier: string, arguments: any[] }
+const store: IStore<any> = {};
 
-type TStoreElement<T> = {
-    name: string,
-    value: T,
-    modifiers?: IModifiers<T>,
-    setters: Array<TSetter<T>>,
-    statesSetters: Array<React.Dispatch<SetStateAction<T>>>
-};
-
-interface IStore {
-    [member: string]: TStoreElement<any>
-}
-
-class Modifier implements TModifierData {
-    modifier: string;
-    arguments: any[];
-
-    constructor(modifier: string, ...args: any) {
-        this.modifier = modifier;
-        this.arguments = args;
-    }
-}
-
-
-const store: IStore = {}; var uid = 0;
-
-function useComponentId(): number {
+function useComponentId() {
     return useState(uid++)[0];
 }
 
-function createSetter<S>(fn: React.Dispatch<SetStateAction<S>>, id: number, element: TStoreElement<S>) {
-    return (value: S | Modifier | ((modifiers: IModifiers<S>) => TModifiersCallback<S>), ...args: any) => {
-
-        if (value instanceof Modifier) {
-            if (element.modifiers === undefined || element.modifiers[value.modifier] === undefined)
-                throw ReferenceError(`The modifier "${value.modifier}" does not exists within the global state "${element.name}".`);
-
-            value = element.modifiers[value.modifier](element.value, ...value.arguments, ...args) || element.value;
-        } else if (value instanceof Function) {
-            if (element.modifiers === undefined || typeof element.modifiers !== 'object')
-                throw TypeError('Invalid data type of member "modifiers" of useGlobal/useGlobalMaker, "object" expected.');
-
-            value = value(element.modifiers)(element.value, ...args) || element.value;
-        }
-
-
-        element.statesSetters.forEach((setState, index) => index !== id && setState(value as S));
-
-        return fn(element.value = (value as S));
-    };
+function createGlobalIfNeeded<V>(name: string, initialState: V, modifiers?: TModifiers<V>) {
+    return store[name] || (store[name] = { setStaters: [], modifiers, currentValue: initialState });
 }
 
-export function useModifier(modifierName: string, ...args: any): Modifier {
-    if (typeof modifierName !== 'string')
-        throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
-    // console.log(args);
-    return new Modifier(modifierName, ...args);
+export function useGlobalMaker<V>(name: string, initialState: V, modifiers?: TModifiers<V>): void {
+    createGlobalIfNeeded(name, initialState, modifiers);
 }
 
-interface IGlobalMaker<T> {
-    name: string,
-    initialState: T,
-    modifiers?: IModifiers<T>,
-    reducers?: IModifiers<T>
-}
-
-export function useGlobalMaker<S>(param: IGlobalMaker<IGlobalMaker<S>['initialState']>): S;
-export function useGlobalMaker<S>(name: string, value?: S, modifiers?: IModifiers<S>): S;
-export function useGlobalMaker<S>(name: any, value?: any, modifiers?: any): any {
-    let obj: IGlobalMaker<S>;
-
-    if (typeof name !== 'string' && typeof name !== 'object')
-        throw TypeError('Invalid data type for 1st argument of useGlobalMaker, "string" or "object" expected.');
-
-    if (typeof name === 'string')
-        obj = { name, initialState: value, modifiers };
-    else if (typeof name === 'object') {
-        obj = (name as IGlobalMaker<S>);
-
-        if (obj.name === undefined || obj.initialState === undefined)
-            throw ReferenceError(`The member "name" or "initialState" does not exists within the object.`);
-    }
-    // console.log(obj.name, { name: obj.name, value: obj.initialState, setters: [], statesSetters: [], modifiers: obj.modifiers || obj.reducers });
-    return (store[obj!.name] || (store[obj!.name] = { name: obj!.name, value: obj!.initialState, setters: [], statesSetters: [], modifiers: obj!.modifiers || obj!.reducers })).value;
-}
-
-export function useGlobal<S>(name: string, value?: S, modifiers?: IModifiers<S>) {
+export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifiers<V>) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
-    let actual = store[name] || (store[name] = { name, value, setters: [], statesSetters: [], modifiers: modifiers });
-    const { 1: setState } = useState(actual.value), id = useComponentId();
+    const globalState: IStoreElement<V> = createGlobalIfNeeded(name, initialState!, modifiers);
+    const id = useComponentId(); // This number will be the same for each component.
+    globalState.setStaters[id] ||= useState(initialState)[1] as React.Dispatch<SetStateAction<V>>;
 
-    if (!actual.setters[id])
-        actual.setters[id] = createSetter(actual.statesSetters[id] = setState, id, actual);
+    return [globalState.currentValue!, (newState: V | ((m: TModifiers<V>) => TModifier<V>), ...args: any) => {
+        if (newState instanceof Function) {
+            if (modifiers === undefined)
+                throw ReferenceError(`Impossible reference modificator of global state "${name}", modifiers argument was undefined.`);
 
-    return [actual.value, actual.setters[id]] as [S, TSetter<S | Modifier | ((modifiers: IModifiers<S>) => TModifiersCallback<S>)>];
-}
+            const modifierResult = newState(modifiers)(globalState.currentValue!, ...args);
 
-interface IComplex<T> {
-    value: T,
-    modifiers?: IModifiers<T>
-}
-
-// interface A {
-//     a: number
-// }
-
-// const [state, setState] = useComplex<A>({ a: 1 }, {
-//     increase: (state) => state.a + 1
-// });
-
-// setState((state) => state.increase);
-
-/* TODO: FIX IN THE FUTURE THE INFERENCE OF M GENERIC TYPE */
-/* Is not my fault, https://github.com/microsoft/TypeScript/issues/10571 */
-export function useComplex<S extends object | (() => S), M extends IModifiers<S> = IModifiers<S>>(initialValue: S, modifiers?: M) {
-    if (initialValue instanceof Function)
-        initialValue = initialValue();
-
-    if (typeof initialValue !== 'object')
-        throw TypeError('Invalid data type for 1st argument of useComplex, "object" expected.');
-
-    const [state, setState] = useState<IComplex<S>>({ value: initialValue, modifiers });
-
-    return [state.value, (value: Partial<S | object> | Modifier | ((modifiers: M) => TModifiersCallback<S>), ...args: any) => {
-        if (value instanceof Modifier) {
-            if (state.modifiers === undefined || state.modifiers[value.modifier] === undefined)
-                throw ReferenceError(`The modifier "${value.modifier}" does not exists for this complex state.`);
-
-            value = state.modifiers[value.modifier](state.value, ...value.arguments, ...args) || state.value;
-        } else if (value instanceof Function) {
-            if (modifiers === undefined || typeof modifiers !== 'object')
-                throw TypeError('Invalid data type for 3rd argument of useComplex, "object" expected.');
-
-            value = value(modifiers)(state.value, ...args) || state.value;
+            newState = modifierResult === undefined ? globalState.currentValue : modifierResult;
         }
 
-        setState({ modifiers: state.modifiers, value: { ...state.value, ...value } })
-    }] as const // [S, (value: Partial<S | object> | Omit<Modifier, keyof TModifierData> | ((state: M) => TModifiersCallback<S>), ...args: any) => void];
-}
+        globalState.currentValue = newState as V;
 
-const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        globalState.setStaters.forEach((setStater) => setStater(globalState.currentValue!));
+    }] as const;
+}
 
 export function useDarkMode(): boolean {
-    return isDarkMode;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-function stringToNumber(text: string): number {
-    return textasd.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
-}
+const stringToNumber = (text: string) => text.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
 
 interface ICheckerParam {
     [member: string | number]: any

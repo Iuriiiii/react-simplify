@@ -2,7 +2,7 @@
   "name": "react-simplify",
   "version": "1.5.10",
   "description": "Simplifying life of React coders",
-  "main": "index",
+  "main": "index.ts",
   "scripts": {
     "build": "tsc --project tsconfig.json"
   },

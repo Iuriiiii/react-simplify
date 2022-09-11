@@ -1,5 +1,5 @@
 import React from 'react'
-import { useGlobal } from 'react-simplify/index';
+import { useGlobal } from 'react-simplify';
 
 interface Props { }
 
