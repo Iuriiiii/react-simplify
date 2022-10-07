@@ -1,11 +1,11 @@
 import React from 'react'
-import { useGlobal, useModifier } from 'react-simplify';
+import { useGlobal, useGlobalState, useModifier } from 'react-simplify';
 
 interface Props { }
 
 const Box2 = (props: Props) => {
     const globalName = 'myGlobal';
-    const [global, setGlobal] = useGlobal<number>(globalName);
+    const [global, setGlobal] = useGlobalState<number>(globalName);
 
     return (
         <section className='Box2'>

@@ -105,6 +105,12 @@ function getValue<V>(param: IValueGetter<V>): V {
         return param.value as V;
 }
 
+/**
+ * Allow to select a modifier by its name.
+ * 
+ * @param {string} modifierName The modifier's name 
+ * @returns The modifier string format
+ */
 export function useModifier(modifierName: string): string {
     if (typeof modifierName !== 'string')
         throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
@@ -112,13 +118,26 @@ export function useModifier(modifierName: string): string {
     return modifierName.startsWith('@') ? modifierName : `@${modifierName}`;
 }
 
+/**
+ * This function allow you to create/load a global state.
+ * 
+ * @param {string} name The name of the global state
+ * @param {V} [initialState] The initial value of the state
+ * @param {TModifiers<V>} [modifiers] The modifiers
+ * @param {TModifiers<V>} [associate=true] Should the actual component be updated along the global state?
+ * @returns The global state
+ * @since 1.6.9
+ */
 export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifiers<V>, associate: boolean = true) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
     const globalState: IStoreElement<V> = createGlobalIfNeeded(name, initialState!, modifiers);
     const id = useComponentId(); // This number will be the same for each component.
-    associate && (globalState.setStaters[id] ||= useState(initialState)[1] as React.Dispatch<SetStateAction<V>>);
+    if (associate) {
+        const { 1: setState } = useState(initialState);
+        globalState.setStaters[id] ||= setState as React.Dispatch<SetStateAction<V>>;
+    }
 
     return [globalState.currentValue!, (newState: V | TModifierCaller<V> | string, ...args: any) => {
         globalState.currentValue = getValue({
@@ -133,6 +152,25 @@ export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifi
     }] as const;
 }
 
+/**
+ * Gets a global state without link the actual component to
+ * the state.
+ * 
+ * @param {string} name The name of the global state
+ * @returns The global state
+ * @since 1.6.9
+ */
+export function useGlobalState<T>(name: string) {
+    return useGlobal<T>(name, undefined, undefined, false);
+}
+
+/**
+ * Allows to create a state with easy modifiable complex data.
+ * 
+ * @param {object} initialState The initial value of the state 
+ * @param modifiers The state's modifier
+ * @returns A new local state
+ */
 export function useComplex<V extends object | (() => V)>(initialState: V, modifiers?: TModifiers<V>) {
     if (initialState instanceof Function)
         initialState = initialState();
@@ -158,7 +196,20 @@ export function useComplex<V extends object | (() => V)>(initialState: V, modifi
     }] as const;
 }
 
+/**
+ * @deprecated
+ * @see useIsDarkMode
+ */
 export function useDarkMode(): boolean {
+    return useIsDarkMode();
+}
+
+/**
+ * 
+ * @returns True if dark-mode is enabled, else otherwise
+ * @since 1.6.9
+ */
+export function useIsDarkMode(): boolean {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
@@ -168,6 +219,11 @@ interface ICheckerParam {
     [member: string | number]: any
 }
 
+/**
+ * 
+ * @param {object} param The object to be checked
+ * @returns A unique represent number
+ */
 export function useChecker(param?: ICheckerParam): number {
     if (!param)
         return 0;
