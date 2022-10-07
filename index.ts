@@ -136,7 +136,7 @@ export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifi
     const id = useComponentId(); // This number will be the same for each component.
     if (associate) {
         const { 1: setState } = useState(initialState);
-        globalState.setStaters[id] ||= setState as React.Dispatch<SetStateAction<V>>;
+        globalState.setStaters[id] = globalState.setStaters[id] || setState as React.Dispatch<SetStateAction<V>>;
     }
 
     return [globalState.currentValue!, (newState: V | TModifierCaller<V> | string, ...args: any) => {
