@@ -112,14 +112,13 @@ export function useModifier(modifierName: string): string {
     return modifierName.startsWith('@') ? modifierName : `@${modifierName}`;
 }
 
-export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifiers<V>) {
+export function useGlobal<V>(name: string, initialState?: V, modifiers?: TModifiers<V>, associate: boolean = true) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
 
     const globalState: IStoreElement<V> = createGlobalIfNeeded(name, initialState!, modifiers);
     const id = useComponentId(); // This number will be the same for each component.
-    const { 1: setState } = useState(initialState);
-    globalState.setStaters[id] ||= setState as React.Dispatch<SetStateAction<V>>;
+    associate && (globalState.setStaters[id] ||= useState(initialState)[1] as React.Dispatch<SetStateAction<V>>);
 
     return [globalState.currentValue!, (newState: V | TModifierCaller<V> | string, ...args: any) => {
         globalState.currentValue = getValue({
