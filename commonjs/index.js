@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useChecker = exports.useDarkMode = exports.useComplex = exports.useGlobal = exports.useModifier = exports.useGlobalMaker = void 0;
+exports.useChecker = exports.useIsDarkMode = exports.useDarkMode = exports.useComplex = exports.useGlobalState = exports.useGlobal = exports.useModifier = exports.useGlobalMaker = void 0;
 const react_1 = require("react");
 var uid = 0;
 const store = {};
@@ -47,13 +47,15 @@ function useModifier(modifierName) {
     return modifierName.startsWith('@') ? modifierName : `@${modifierName}`;
 }
 exports.useModifier = useModifier;
-function useGlobal(name, initialState, modifiers) {
+function useGlobal(name, initialState, modifiers, associate = true) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
     const globalState = createGlobalIfNeeded(name, initialState, modifiers);
     const id = useComponentId();
-    const { 1: setState } = (0, react_1.useState)(initialState);
-    globalState.setStaters[id] ||= setState;
+    if (associate) {
+        const { 1: setState } = (0, react_1.useState)(initialState);
+        globalState.setStaters[id] ||= setState;
+    }
     return [globalState.currentValue, (newState, ...args) => {
             globalState.currentValue = getValue({
                 value: newState,
@@ -66,6 +68,10 @@ function useGlobal(name, initialState, modifiers) {
         }];
 }
 exports.useGlobal = useGlobal;
+function useGlobalState(name) {
+    return useGlobal(name, undefined, undefined, false);
+}
+exports.useGlobalState = useGlobalState;
 function useComplex(initialState, modifiers) {
     if (initialState instanceof Function)
         initialState = initialState();
@@ -87,9 +93,13 @@ function useComplex(initialState, modifiers) {
 }
 exports.useComplex = useComplex;
 function useDarkMode() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return useIsDarkMode();
 }
 exports.useDarkMode = useDarkMode;
+function useIsDarkMode() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+exports.useIsDarkMode = useIsDarkMode;
 const stringToNumber = (text) => text.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
 function useChecker(param) {
     if (!param)

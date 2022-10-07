@@ -4,7 +4,9 @@
   "description": "Simplifying life of React coders",
   "main": "index.ts",
   "scripts": {
-    "build": "tsc --project tsconfig.json"
+    "build:next": "tsc --project tsconfig.json",
+    "build:common": "tsc --project tsconfig.common.json",
+    "build": "npm run build:next && npm run build:common"
   },
   "repository": {
     "type": "git",

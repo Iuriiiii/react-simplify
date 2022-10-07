@@ -42,13 +42,15 @@ export function useModifier(modifierName) {
         throw new TypeError('Invalid data type argument for useModifier, "string" expected.');
     return modifierName.startsWith('@') ? modifierName : `@${modifierName}`;
 }
-export function useGlobal(name, initialState, modifiers) {
+export function useGlobal(name, initialState, modifiers, associate = true) {
     if (typeof name !== 'string')
         throw new TypeError('Invalid data type for 1st argument of useGlobal, "string" expected.');
     const globalState = createGlobalIfNeeded(name, initialState, modifiers);
     const id = useComponentId();
-    const { 1: setState } = useState(initialState);
-    globalState.setStaters[id] ||= setState;
+    if (associate) {
+        const { 1: setState } = useState(initialState);
+        globalState.setStaters[id] ||= setState;
+    }
     return [globalState.currentValue, (newState, ...args) => {
             globalState.currentValue = getValue({
                 value: newState,
@@ -59,6 +61,9 @@ export function useGlobal(name, initialState, modifiers) {
             });
             globalState.setStaters.forEach((setStater) => setStater(globalState.currentValue));
         }];
+}
+export function useGlobalState(name) {
+    return useGlobal(name, undefined, undefined, false);
 }
 export function useComplex(initialState, modifiers) {
     if (initialState instanceof Function)
@@ -80,6 +85,9 @@ export function useComplex(initialState, modifiers) {
         }];
 }
 export function useDarkMode() {
+    return useIsDarkMode();
+}
+export function useIsDarkMode() {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 const stringToNumber = (text) => text.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) / (index + 1), 0);
