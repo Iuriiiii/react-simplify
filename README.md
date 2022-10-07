@@ -89,6 +89,20 @@ If the global state was called previously, the second argument can be avoided.
 const [globalValue, setGlobalValue] = useGlobal('globalName');
 ```
 
+### useGlobalState
+
+> Since 1.6.9
+
+Allows to get a global state without links the actual component to future changes.
+
+#### Example
+
+```js
+/* Child.jsx / Child.tsx */
+const [globalValue, setGlobalValue] = useGlobalState('globalName');
+
+setGlobalValue(1); /* Update others components but not this */
+```
 
 ###  useModifier()
 
@@ -134,6 +148,12 @@ or
 We recomend to pass the arguments to the modifier directly from the state updater, in the example's case: `setState`.
 
 ### useDarkMode()
+
+> Deprecated, use useIsDarkMode instead
+
+This hook just return true if the user has the DarkMode enabled, false otherwise.
+
+### useIsDarkMode()
 
 This hook just return true if the user has the DarkMode enabled, false otherwise.
 
