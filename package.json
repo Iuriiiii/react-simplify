@@ -1,6 +1,6 @@
 {
   "name": "react-simplify",
-  "version": "1.6.14",
+  "version": "1.7.0",
   "description": "Simplifying life of React coders",
   "main": "index.js",
   "scripts": {

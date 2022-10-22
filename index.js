@@ -49,7 +49,7 @@ export function useGlobal(name, initialState, modifiers, associate = true) {
     const id = useComponentId();
     if (associate) {
         const { 1: setState } = useState(initialState);
-        globalState.setStaters[id] ||= setState;
+        globalState.setStaters[id] = globalState.setStaters[id] || setState;
     }
     return [globalState.currentValue, (newState, ...args) => {
             globalState.currentValue = getValue({
